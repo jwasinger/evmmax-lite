@@ -1,0 +1,12 @@
+[submodule "go-ethereum"]
+	path = go-ethereum
+	url = https://github.com/jwasinger/go-ethereum
+[submodule "go-ethereum-asm384"]
+	path = go-ethereum-asm384
+	url = https://github.com/jwasinger/go-ethereum
+[submodule "evm-benchmarks"]
+	path = evm-benchmarks
+	url = https://github.com/jwasinger/evm-benchmarks
+[submodule "mont-arith"]
+	path = mont-arith
+	url = https://github.com/jwasinger/mont-arith
