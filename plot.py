@@ -51,7 +51,9 @@ def read_go_arith_benchmarks(file_name):
 
         bench_preset = bench_full.split('_')[0]
         bench_op = bench_full.split('_')[1]
-        bench_limbs = bench_full.split('_')[2]
+        bench_limbs = int(bench_full.split('_')[2])
+        assert bench_limbs % 64 == 0, "invalid bench limb bit width"
+        bench_limbs //= 64
         time = float(parts[2])
         unit = re.search(r'(.*)\/', parts[3]).groups()[0]
 
@@ -77,9 +79,11 @@ def format_bench_data_for_graphing(x_range, bench_data, label, color):
     y_vals = []
     y_errs = []
 
-    for limb_val in bench_data.keys():
-        assert int(limb_val) % 64 == 0, "invalid limb bits"
-        x_val = int(limb_val) // 64
+    for i, limb_val in enumerate(bench_data.keys()):
+        if i + 1 < x_range[0] or i + 1 > x_range[1]:
+            continue
+
+        x_val = limb_val
         y_val = bench_data[limb_val]['mean']
         y_err = bench_data[limb_val]['stddev']
         x_vals.append(x_val)
@@ -108,7 +112,6 @@ def scatterplot_ns_data(fname: str, name: str, annotate: bool, args):
         plt.xlabel("number of limbs")
         plt.ylabel("runtime (ns)")
         
-        print(x_vals)
         for x, y, y_err in zip(x_vals, y_vals, y_errs):
             if x < x_range[0] or x > x_range[1]:
                 continue
@@ -123,41 +126,43 @@ def scatterplot_ns_data(fname: str, name: str, annotate: bool, args):
     ax.set(title=name)
     plt.savefig(fname)
 
-def fit_quadratic(dataset):
-    xs = [val[0] for val in dataset]
-    ys = [val[1] for val in dataset]
-
-    eqn = np.polyfit(np.array(xs), np.array(ys), 2)
+def fit_quadratic(graphing_dataset):
+    eqn = np.polyfit(np.array(graphing_dataset[1]), np.array(graphing_dataset[2]), 2)
     eqn = [round(val, 2) for val in eqn]
     lof_y = [x ** 2 * eqn[0] + x * eqn[1] + eqn[2] for x in xs]
     return eqn, list(zip(xs, lof_y))
 
-def fit_linear(dataset):
-    xs = [val[0] for val in dataset]
-    ys = [val[1] for val in dataset]
-
+def fit_linear(x_range, graphing_dataset):
+    xs = graphing_dataset[1][x_range[0]:x_range[1]]
+    ys = graphing_dataset[2][x_range[0]:x_range[1]]
     eqn = np.polyfit(np.array(xs), np.array(ys), 1)
     eqn = [round(val, 2) for val in eqn]
     
     # make sure the line of fit goes thru the first limb
-    new_y_intercept_addmod = dataset[0][1] - abs(abs(eqn[0]) - abs(eqn[1]))
-    print(new_y_intercept_addmod)
-    eqn[1] = new_y_intercept_addmod
+    # TODO make this optional (I think addmod/submod needed it to get proper models)
+    # new_y_intercept_addmod = graphing_dataset[0][1] - abs(abs(eqn[0]) - abs(eqn[1]))
+    # eqn[1] = new_y_intercept_addmod
 
     lof_y = [x * eqn[0] + eqn[1] for x in xs]
+    import pdb; pdb.set_trace()
     return eqn, list(zip(xs, lof_y))
 
 def stitch_data(data1, data2, cutoff: int):
-    result = [] 
-    print("data1 is {}".format(data1))
-    x_values = [[x_val for x_val in data1[key]] for key in data1.keys()]
-    print(x_values)
-    for i in range(1, cutoff):
-        result.append((data1['x_values'][str(i * 64)], data1['y_value'][str(i * 64)]))
-    for i in range(cutoff, 65):
-        result.append((data2['x_values'][str(i * 64)], data2['y_value'][str(i * 64)]))
+    graph_range = (1,64) # TODO allow configurable?
+    xs = []
+    ys = []
+    y_errs = []
 
-    return result
+    for i in range(1, cutoff):
+        xs.append(i)
+        ys.append(data1[i]['mean'])
+        y_errs.append(data1[i]['stddev'])
+    for i in range(cutoff, 65):
+        xs.append(i)
+        ys.append(data2[i]['mean'])
+        y_errs.append(data2[i]['stddev'])
+
+    return (graph_range, xs, ys, y_errs, 'red', 'place-holder-name', 'o')
 
 def stitch_gas_model(model1, model2, cutoff: int):
     pass
@@ -172,11 +177,22 @@ setmod_generic_data = format_bench_data_for_graphing((1, 64), go_arith_benchmark
 addmod_non_unrolled_data = format_bench_data_for_graphing((1, 64), go_arith_benchmarks['addmod']['non-unrolled'], 'addmod-non-unrolled', 'red')
 submod_non_unrolled_data = format_bench_data_for_graphing((1, 64), go_arith_benchmarks['submod']['non-unrolled'], 'submod-non-unrolled', 'red')
 
-scatterplot_ns_data("charts/mulmont_generic.png", "MULMONTMAX Generic Benchmarks", False, [mulmont_non_unrolled_data, mulmont_generic_data])
-scatterplot_ns_data('charts/setmod.png', 'SETMOD Benchmarks', False, [setmod_non_unrolled_data, setmod_generic_data])
-scatterplot_ns_data('charts/addmod.png', 'ADDMOD Benchmarks', False, [addmod_non_unrolled_data])
-scatterplot_ns_data('charts/submod.png', 'SUBMOD Benchmarks', False, [submod_non_unrolled_data])
+#scatterplot_ns_data("charts/mulmont_generic.png", "MULMONTMAX Generic Benchmarks", False, [mulmont_non_unrolled_data, mulmont_generic_data])
+#scatterplot_ns_data('charts/setmod.png', 'SETMOD Benchmarks', False, [setmod_non_unrolled_data, setmod_generic_data])
+#scatterplot_ns_data('charts/addmod.png', 'ADDMOD Benchmarks', False, [addmod_non_unrolled_data])
+#scatterplot_ns_data('charts/submod.png', 'SUBMOD Benchmarks', False, [submod_non_unrolled_data])
 
-sys.exit(0)
+# linear cost for setmod up to cutoff
+setmod_low_cost, setmod_low_eqn = fit_linear((0,49), setmod_non_unrolled_data)
+import pdb; pdb.set_trace()
 
-stitch_data(go_arith_benchmarks['mulmont']['generic'], go_arith_benchmarks['mulmont']['non-unrolled'], 49)
+mulmont_evmmax = stitch_data(go_arith_benchmarks['mulmont']['non-unrolled'], go_arith_benchmarks['mulmont']['generic'], fast_mulmont_cutoff)
+setmod_evmmax = stitch_data(go_arith_benchmarks['setmod']['non-unrolled'], go_arith_benchmarks['setmod']['generic'], fast_mulmont_cutoff)
+scatterplot_ns_data("charts/mulmont_evmmax.png", "MULMONTMAX EVMMAX Benchmarks", False, [mulmont_evmmax])
+scatterplot_ns_data("charts/setmod_evmmax.png", "SETMODMAX EVMMAX Benchmarks", False, [setmod_evmmax])
+
+mulmont_non_unrolled_small_limbs_data = format_bench_data_for_graphing((1, 12), go_arith_benchmarks['mulmont']['non-unrolled'], 'mulmont', 'red')
+setmod_non_unrolled_small_limbs_data = format_bench_data_for_graphing((1, 12), go_arith_benchmarks['setmod']['non-unrolled'], 'setmod', 'green')
+import pdb; pdb.set_trace()
+scatterplot_ns_data("charts/mulmont_small_limbs.png", "MULMONTMAX EVMMAX Benchmarks", True, [mulmont_non_unrolled_small_limbs_data])
+scatterplot_ns_data("charts/setmod_small_limbs.png", "SETMODMAX EVMMAX Benchmarks", True, [setmod_non_unrolled_small_limbs_data])
