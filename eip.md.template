@@ -1,0 +1,22 @@
+## EVMMAX
+
+ADDMODAX/SUBDMODMAX
+
+* low limbs w/ model
+{addmod_submod_low}
+
+* higher limbs w/ model
+{addmod_submod_all}
+
+MULMONTMAX
+
+* low limbs w/ model
+{mulmont_low}
+
+* high limbs w/ model
+{mulmont_all}
+
+SETMODMAX
+
+* low/high limbs w/ model
+{setmod_all}
