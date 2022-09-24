@@ -3,20 +3,23 @@
 ADDMODAX/SUBDMODMAX
 
 * low limbs w/ model
-!{AddMod SubMod}[/charts/addmod_submod_low.png]
+![AddMod SubMod](charts/addmod_submod_low.png)
 
 * higher limbs w/ model
-!{AddMod SubMod}[/charts/addmod_submod_all.png]
+![AddMod SubMod](https://github.com/jwasinger/evmmax-lite/raw/wip/charts/addmod_submod_all.png)
 
 MULMONTMAX
 
 * low limbs w/ model
-![AddMod SubMod]/charts/mulmont_low.png|
+![MulMont Low](https://github.com/jwasinger/evmmax-lite/raw/wip/charts/mulmontmax_low.png)
 
 * high limbs w/ model
-!{AddMod SubMod}[/charts/mulmont_all.png]
+![MulMont All](https://github.com/jwasinger/evmmax-lite/raw/wip/charts/mulmontmax_all.png)
 
 SETMODMAX
 
 * low/high limbs w/ model
-!{AddMod SubMod}[/charts/setmod_all.png]
+![SetMod Low](https://github.com/jwasinger/evmmax-lite/raw/wip/charts/setmodmax_low.png)
+
+* high limbs w/ model
+![SetMod High](https://github.com/jwasinger/evmmax-lite/raw/wip/charts/setmodmax_all.png)
