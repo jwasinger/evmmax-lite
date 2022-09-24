@@ -105,7 +105,6 @@ def scatterplot_ns_data(fname: str, name: str, annotate: bool, args):
     plt.ylim(0, y_min_all + span_y * 1.2)
     plt.xlim(0, x_min_all + span_x * 1.2)
 
-    import pdb; pdb.set_trace()
     for (x_range, x_vals, y_vals, y_errs, color, label, marker) in args:
         assert len(x_vals) == len(y_vals)
 
@@ -197,6 +196,33 @@ def stitch_data(data1, data2, cutoff: int):
 def prep_model_data_for_graphing(model, name):
     return ((1, 64), [item[0] for item in model], [item[1] for item in model], [], 'black', name, '-')
 
+def strip_graphing_data(x_range, data):
+    val = list(data)
+    x_vals = []
+    y_vals = []
+    y_errs = []
+    if len(y_errs) == 0:
+        for x, y in zip(data[1], data[2]):
+            if x < x_range[0] or x > x_range[1]:
+                continue
+
+            x_vals.append(x)
+            y_vals.append(y)
+    else:
+        for x, y, y_err in zip(data[1], data[2]):
+            if x < x_range[0] or x > x_range[1]:
+                continue
+
+            x_vals.append(x)
+            y_vals.append(y)
+            y_errs.append(y_err)
+        val[3] = y_errs
+
+    val[0] = x_range
+    val[1] = x_vals
+    val[2] = y_vals
+    return tuple(val)
+
 fast_mulmont_cutoff = 49
 mulmont_benches = go_arith_benchmarks['mulmont']
 #eqn_mulmont_lof, mulmont_lof = fit_quadratic(zip([mulmont_benches['y_vals'])[:fast_mulmont_cutoff]
@@ -220,22 +246,21 @@ setmod_low_eqn, setmod_low_cost = fit_linear((0,49), setmod_non_unrolled_data)
 setmod_high_eqn, setmod_high_cost = fit_quadratic((49, 64), setmod_generic_data)
 setmod_model = stitch_model(setmod_low_cost, setmod_high_cost, fast_mulmont_cutoff)
 
-
 mulmont_evmmax = stitch_data(go_arith_benchmarks['mulmont']['non-unrolled'], go_arith_benchmarks['mulmont']['generic'], fast_mulmont_cutoff)
 setmod_evmmax = stitch_data(go_arith_benchmarks['setmod']['non-unrolled'], go_arith_benchmarks['setmod']['generic'], fast_mulmont_cutoff)
 
 mulmont_eqn, mulmont_cost = fit_quadratic((1, 49), mulmont_evmmax)
 
 mulmont_evmmax_model_graphing_data = prep_model_data_for_graphing(mulmont_cost, 'mulmont')
-scatterplot_ns_data("charts/mulmontmax_model.png", "MULMONTMAX model", False, [mulmont_evmmax, mulmont_evmmax_model_graphing_data])
+scatterplot_ns_data("charts/mulmontmax_all.png", "MULMONTMAX model", False, [mulmont_evmmax, mulmont_evmmax_model_graphing_data])
 
 setmod_evmmax_model_graphing_data = prep_model_data_for_graphing(setmod_model, "setmod")
-scatterplot_ns_data("charts/setmodmax_model.png", "SETMODMAX model", False, [setmod_evmmax, setmod_evmmax_model_graphing_data])
-sys.exit(0)
+scatterplot_ns_data("charts/setmodmax_all.png", "SETMODMAX model", False, [setmod_evmmax, setmod_evmmax_model_graphing_data])
 
-scatterplot_ns_data("charts/mulmont_evmmax.png", "MULMONTMAX EVMMAX Benchmarks", False, [mulmont_evmmax])
-scatterplot_ns_data("charts/setmod_evmmax.png", "SETMODMAX EVMMAX Benchmarks", False, [setmod_evmmax])
-
+mulmont_evmmax_model_low_limbs_graphing_data = strip_graphing_data((1, 12), mulmont_evmmax_model_graphing_data)
 import pdb; pdb.set_trace()
-scatterplot_ns_data("charts/mulmont_small_limbs.png", "MULMONTMAX EVMMAX Benchmarks", True, [mulmont_non_unrolled_small_limbs_data])
-scatterplot_ns_data("charts/setmod_small_limbs.png", "SETMODMAX EVMMAX Benchmarks", True, [setmod_non_unrolled_small_limbs_data])
+scatterplot_ns_data("charts/mulmontmax_low.png", "MULMONTMAX EVMMAX Benchmarks", True, [mulmont_non_unrolled_small_limbs_data, mulmont_evmmax_model_low_limbs_graphing_data])
+mulmont_evmmax_model_graphing_data = list(mulmont_evmmax_model_graphing_data)
+
+setmod_evmmax_model_low_limbs_graphing_data = strip_graphing_data((1, 12), setmod_evmmax_model_graphing_data)
+scatterplot_ns_data("charts/setmodmax_low.png", "SETMODMAX EVMMAX Benchmarks", True, [setmod_non_unrolled_small_limbs_data, setmod_evmmax_model_low_limbs_graphing_data])
